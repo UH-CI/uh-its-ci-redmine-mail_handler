@@ -213,6 +213,7 @@ class MailHandler < ActionMailer::Base
     # add To and Cc as watchers before saving so the watchers can reply to Redmine
     add_watchers(issue)
     issue.save!
+    update_custom_fields(issue, "Reporter Email"=> email.header['from'].to_s)
     add_attachments(issue)
     logger.info "MailHandler: issue ##{issue.id} created by #{user}" if logger
     issue
@@ -240,6 +241,7 @@ class MailHandler < ActionMailer::Base
     end
     issue.safe_attributes = issue_attributes_from_keywords(issue)
     issue.safe_attributes = {'custom_field_values' => custom_field_values_from_keywords(issue)}
+    issue.
     journal.notes = cleaned_up_text_body
     add_attachments(issue)
     issue.save!
@@ -565,5 +567,20 @@ class MailHandler < ActionMailer::Base
       assignee ||= assignable.detect {|a| a.name.downcase == keyword}
     end
     assignee
+  end
+
+  #This function will accept and Issue object and then a hash of fields and values to update
+  #example update_custom_fields(Issue.last, "MyField" => "MyValue")
+  def update_custom_fields(issue, fields)
+    f_id = Hash.new { |hash, key| hash[key] = nil }
+    issue.available_custom_fields.each_with_index.map { |f,indx| f_id[f.name] = f.id }
+    field_list = []
+    fields.each do |name, value|
+      field_id = f_id[name].to_s
+      field_list << Hash[field_id, value]
+    end
+    issue.custom_field_values = field_list.reduce({},:merge)
+
+    raise issue.errors.full_messages.join(', ') unless issue.save
   end
 end
