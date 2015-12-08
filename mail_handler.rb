@@ -540,7 +540,7 @@ class MailHandler < ActionMailer::Base
       body = body.gsub(regex, '')
     end
     body.strip
-    #The below line is what is needed to insert the email from what user
+    #The below line is what is needed to insert the email header address from the user submittig an issue
     body = email.header['from'].to_s + " Reported:\n\n" + body
   end
 
